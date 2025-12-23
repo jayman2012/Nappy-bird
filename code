@@ -1,0 +1,86 @@
+-- Bubble Popping Game for Codea
+
+Bubble = class()
+
+function Bubble:init(x, y, radius, speed)
+    self.x = x
+    self.y = y
+    self.radius = radius
+    self.speed = speed
+    self.popped = false
+end
+
+function Bubble:update()
+    if not self.popped then
+        self.y = self.y + self.speed
+        if self.y - self.radius > HEIGHT then
+            self.popped = true
+        end
+    end
+end
+
+function Bubble:draw()
+    if not self.popped then
+        fill(135, 206, 250, 150) -- light blue with some transparency
+        ellipse(self.x, self.y, self.radius * 2)
+        fill(255, 255, 255, 100)
+        ellipse(self.x - self.radius/3, self.y + self.radius/3, self.radius/1.5)
+    end
+end
+
+function Bubble:containsPoint(px, py)
+    local dx = px - self.x
+    local dy = py - self.y
+    return dx*dx + dy*dy <= self.radius * self.radius
+end
+
+bubbles = {}
+score = 0
+spawnTimer = 0
+
+function setup()
+    parameter.watch("score")
+    bubbles = {}
+    score = 0
+    spawnTimer = 0
+end
+
+function draw()
+    background(30, 30, 50)
+    
+    spawnTimer = spawnTimer + DeltaTime
+    if spawnTimer >= 0.5 then
+        spawnTimer = 0
+        local x = math.random(50, WIDTH - 50)
+        local radius = math.random(20, 40)
+        local speed = math.random(15, 30) * DeltaTime  -- slower speed for easier catching
+        table.insert(bubbles, Bubble(x, -radius, radius, speed))
+    end
+    
+    for i = #bubbles, 1, -1 do
+        local b = bubbles[i]
+        b:update()
+        if b.popped then
+            table.remove(bubbles, i)
+        else
+            b:draw()
+        end
+    end
+    
+    fill(255)
+    fontSize(40)
+    text("Score: "..score, WIDTH/2, HEIGHT - 50)
+end
+
+function touched(touch)
+    if touch.state == ENDED then
+        for i = #bubbles, 1, -1 do
+            local b = bubbles[i]
+            if not b.popped and b:containsPoint(touch.x, touch.y) then
+                b.popped = true
+                score = score + 1
+                break
+            end
+        end
+    end
+end
